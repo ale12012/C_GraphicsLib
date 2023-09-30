@@ -6,11 +6,11 @@
 
 float rmax = 1.5f;
 float rmin = -1.5f;
-// make sure the aspect ratio is 16:9
+            // make sure the aspect ratio is 16:9
 float imin = -1.5f * 9.0f / 16.0f;
 float imax = 1.5f * 9.0f / 16.0f;
 
-int max_iterations = 200;
+int max_iterations = 100;
 
 // CUDA Kernel
 __global__ void mandelbrotKernel(int* output, int width, int height, float rmin, float rmax, float imin, float imax, int max_iterations) {
@@ -21,12 +21,12 @@ __global__ void mandelbrotKernel(int* output, int width, int height, float rmin,
 
     double x0 = (double)x / (double)width * (rmax - rmin) + rmin;
     double y0 = (double)y / (double)height * (imax - imin) + imin;
-    cuComplex z0 = make_cuComplex(x0, y0);
-    cuComplex z = z0;
+    cuDoubleComplex z0 = make_cuDoubleComplex(x0, y0);
+    cuDoubleComplex z = z0;
     int iterations = 0;
 
-    while(cuCabsf(z) < 2.0f && iterations < max_iterations) {
-        z = cuCaddf(cuCmulf(z, z), z0);
+    while(cuCabs(z) < 2.0f && iterations < max_iterations) {
+        z = cuCadd(cuCmul(z, z), z0);
         iterations++;
     }
     output[y * width + x] = iterations;
@@ -75,11 +75,7 @@ void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float 
 
 // map the number of iterations to a color
 int color(int iterations) {
-    if(iterations == max_iterations) {
-        return 0x000000000;
-    } 
-    if (iterations > 50) {
-        return 0x00FF00FF;
-    }
-    return 0x00FFFFFF;
+    int ratio = 0xFFFFFF / max_iterations;
+    int color = iterations * ratio;
+    return color;
 }
