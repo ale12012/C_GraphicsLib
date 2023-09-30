@@ -6,6 +6,8 @@
 #include "slib/mandelbrot.h"
 
 static bool quit = false;
+double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
+double zoom_factor = 0.5;
 
 struct {
     int width;
@@ -46,7 +48,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
     while(!quit) {
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
-        
+
         for (int i = 0; i < frame.width * frame.height; i++) {
             frame.pixels[i] = color(mandelbrot(i, frame.width, frame.height));
         }
@@ -64,6 +66,25 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
         case WM_QUIT:
         case WM_DESTROY: {
             quit = true;
+        } break;
+        case WM_LBUTTONDOWN: {
+            int mouseX = LOWORD(lParam);
+            int mouseY = HIWORD(lParam);
+            mouseY = frame.height - mouseY;
+
+            double x = (double)mouseX / frame.width * (rmax - rmin) + rmin;
+            double y = (double)mouseY / frame.height * (imax - imin) + imin;
+            double r_range = (rmax - rmin) * zoom_factor;
+            double i_range = (imax - imin) * zoom_factor;
+            double new_rmin = x - r_range / 2.0;
+            double new_rmax = x + r_range / 2.0;
+            double new_imin = y - i_range / 2.0;
+            double new_imax = y + i_range / 2.0;
+
+            set_mandelbrot_range(new_rmin, new_rmax, new_imin, new_imax);
+
+            InvalidateRect(window_handle, NULL, FALSE);
+            UpdateWindow(window_handle);
         } break;
 
         case WM_PAINT: {
