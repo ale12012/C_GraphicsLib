@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "slib/mandelbrot.h"
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
@@ -27,6 +29,13 @@ static HBITMAP frame_bitmap = 0;
 static HDC frame_device_context = 0;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, int nCmdShow) {
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    if(deviceCount == 0) {
+        // Handle error - No CUDA devices available!
+        return -1;
+    }
+
     const wchar_t window_class_name[] = L"My Window Class";
     static WNDCLASS window_class = { 0 };
     window_class.lpfnWndProc = WindowProcessMessage;
@@ -49,10 +58,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
 
+        int* pixels = malloc(sizeof(int) * frame.width * frame.height);
         for (int i = 0; i < frame.width * frame.height; i++) {
-            frame.pixels[i] = color(mandelbrot(i, frame.width, frame.height));
+            pixels[i] = i;
         }
 
+        // Call the CUDA function to compute Mandelbrot
+        computeMandelbrotOnGPU(frame.pixels, pixels, frame.width, frame.height);  // This function should be defined in your CUDA code.
         InvalidateRect(window_handle, NULL, FALSE);
         UpdateWindow(window_handle);
     }
