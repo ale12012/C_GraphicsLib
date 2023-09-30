@@ -3,6 +3,9 @@
 #include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.2\include\cuda_runtime.h"
 #include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.2\include\device_launch_parameters.h"
 #include "../slib/mandelbrot.cuh"
+#include <math.h>
+
+#define TWO_PI 6.2831853071795864769252867665590057683943
 
 float rmax = 1.5f;
 float rmin = -1.5f;
@@ -74,8 +77,48 @@ void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float 
 }
 
 // map the number of iterations to a color
-int color(int iterations) {
-    int ratio = 0xFFFFFF / max_iterations;
-    int color = iterations * ratio;
-    return color;
+int hueToRGB(float hue) {
+    float r = sin(hue) * 127.5 + 127.5;
+    float g = sin(hue + TWO_PI / 3) * 127.5 + 127.5;
+    float b = sin(hue + 2 * TWO_PI / 3) * 127.5 + 127.5;
+    return ((int)r << 16) | ((int)g << 8) | (int)b;
+}
+
+int fullSpectrumColor(int iterations) {
+    float hue = (float)iterations / max_iterations * TWO_PI;
+    if (iterations == max_iterations) {
+        return 0x000000;
+    }
+    return hueToRGB(hue);
+}
+
+
+
+// map the number of iterations to a color
+int graidiantColor(int iterations) {
+    int rStart = 0xFF, gStart = 0xFF, bStart = 0xFF;  // White
+    int rEnd = 0, gEnd = 0, bEnd = 0;                 // Black
+
+    double ratio = (double)iterations / max_iterations;
+    int r = (int)(rStart + ratio * (rEnd - rStart));
+    int g = (int)(gStart + ratio * (gEnd - gStart));
+    int b = (int)(bStart + ratio * (bEnd - bStart));
+    if (iterations == max_iterations) {
+        r = 0;
+        g = 0;
+        b = 0;
+    }
+    return (r << 16) | (g << 8) | b;
+}
+int defColor(int iterations) {
+    int r = (iterations % 8) * 32;  
+    int g = (iterations % 16) * 16;
+    int b = (iterations % 32) * 8;
+    return (r << 16) | (g << 8) | b;
+}
+
+int color(int choice, int iterations) {
+    if (choice == 1) return graidiantColor(iterations);
+    else if (choice == 2) return fullSpectrumColor(iterations);
+    else return defColor(iterations);
 }
