@@ -2,9 +2,10 @@
 
 float rmax = 1.5f;
 float rmin = -1.5f;
-// make sure the aspect ratio is 16:9
+// make sure the aspect ratio is 16:9 
 float imin = -1.5f * 9.0f / 16.0f;
 float imax = 1.5f * 9.0f / 16.0f;
+
 
 int max_iterations = 200;
 
@@ -33,12 +34,8 @@ void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float 
 
 // map the number of iterations to a color
 int color(int iterations) {
-    if(iterations == max_iterations) {
-        return 0x00000000;
-    } if (iterations > 50) {
-        return 0x00FF00FF;
-    }
-    else {
-        return 0x00FFFFFF;
-    }
+    int ratio = 0xFFFFFF / max_iterations;
+    int color = iterations * ratio;
+    return color;
 }
+    
