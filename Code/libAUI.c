@@ -10,9 +10,12 @@ float rmin = -1.5f;
 float imin = -1.5f * 9.0f / 16.0f;
 float imax = 1.5f * 9.0f / 16.0f;
 
+static int mouseX = 0;
+static int mouseY = 0;
+
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
-double zoom_factor = 0.5;
+double zoom_factor = 0.99f;
 
 struct {
     int width;
@@ -58,7 +61,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
 
         int* pixels = malloc(sizeof(int) * frame.width * frame.height);
         computeMandelbrot(pixels, frame.width, frame.height);
-        
+
         for (int i = 0; i < frame.width * frame.height; i++) {
             frame.pixels[i] = color(pixels[i]);
         }
@@ -67,6 +70,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         computeMandelbrotGPU(pixels, frame.width, frame.height);  // This function should be defined in your CUDA code.
         InvalidateRect(window_handle, NULL, FALSE);
         UpdateWindow(window_handle);
+        free(pixels);
     }
 
     return 0;
@@ -79,23 +83,33 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
             quit = true;
         } break;
         case WM_LBUTTONDOWN: {
-            int mouseX = LOWORD(lParam);
-            int mouseY = HIWORD(lParam);
+            mouseX = LOWORD(lParam);
+            mouseY = HIWORD(lParam);
             mouseY = frame.height - mouseY;
+            
+            // 3rd parameter is for frequency
+            SetTimer(window_handle, 1, 50, NULL);
 
-            double x = (double)mouseX / frame.width * (rmax - rmin) + rmin;
-            double y = (double)mouseY / frame.height * (imax - imin) + imin;
+        } break;
+
+        case WM_LBUTTONUP: {
+            KillTimer(window_handle, 1);
+        }
+
+        case WM_TIMER: {
             double r_range = (rmax - rmin) * zoom_factor;
             double i_range = (imax - imin) * zoom_factor;
+            double x = (double)mouseX / frame.width * (r_range) + rmin;
+            double y = (double)mouseY / frame.height * (i_range) + imin;
             double new_rmin = x - r_range / 2.0;
             double new_rmax = x + r_range / 2.0;
             double new_imin = y - i_range / 2.0;
             double new_imax = y + i_range / 2.0;
-
+            
+            imax = new_imax;
+            imin = new_imin;
             rmax = new_rmax;
             rmin = new_rmin;
-            imin = new_imin;
-            imax = new_imax;
             set_mandelbrot_range(new_rmin, new_rmax, new_imin, new_imax);
 
             InvalidateRect(window_handle, NULL, FALSE);
