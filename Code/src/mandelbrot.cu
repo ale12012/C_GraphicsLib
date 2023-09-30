@@ -1,6 +1,8 @@
-#include <complex.h>
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include <cuComplex.h>
+#include <stdio.h>
+#include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.2\include\cuda_runtime.h"
+#include "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.2\include\device_launch_parameters.h"
+#include "../slib/mandelbrot.cuh"
 
 float rmax = 1.5f;
 float rmin = -1.5f;
@@ -17,14 +19,14 @@ __global__ void mandelbrotKernel(int* output, int width, int height, float rmin,
 
     if(x >= width || y >= height) return;
 
-    float x0 = (float)x / (float)width * (rmax - rmin) + rmin;
-    float y0 = (float)y / (float)height * (imax - imin) + imin;
-    float complex z0 = x0 + y0 * I;
-    float complex z = z0;
+    double x0 = (double)x / (double)width * (rmax - rmin) + rmin;
+    double y0 = (double)y / (double)height * (imax - imin) + imin;
+    cuComplex z0 = make_cuComplex(x0, y0);
+    cuComplex z = z0;
     int iterations = 0;
 
-    while(cabsf(z) < 2.0f && iterations < max_iterations) {
-        z = z * z + z0;
+    while(cuCabsf(z) < 2.0f && iterations < max_iterations) {
+        z = cuCaddf(cuCmulf(z, z), z0);
         iterations++;
     }
     output[y * width + x] = iterations;
@@ -47,6 +49,22 @@ void computeMandelbrotGPU(int* h_output, int width, int height) {
     cudaFree(d_output);
 }
 
+int initializeCUDA() {
+    int deviceCount;
+    cudaGetDeviceCount(&deviceCount);
+    if(deviceCount == 0) {
+        return -1;
+    }
+    return 0;
+}
+
+void computeMandelbrot(int* pixels, int width, int height) {
+    for (int i = 0; i < width * height; i++) {
+        pixels[i] = i;
+    }
+    computeMandelbrotGPU(pixels, width, height); 
+}
+
 // Set new mandelbrot range
 void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float new_imax) {
     rmin = new_rmin;
@@ -58,7 +76,7 @@ void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float 
 // map the number of iterations to a color
 int color(int iterations) {
     if(iterations == max_iterations) {
-        return 0x00000000;
+        return 0x000000000;
     } 
     if (iterations > 50) {
         return 0x00FF00FF;
