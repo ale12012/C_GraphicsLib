@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include "slib/mandelbrot.cuh"
 
+#define ID_COLOR_1 1
+#define ID_COLOR_2 2
+#define ID_COLOR_3 3
+
 float rmax = 1.5f;
 float rmin = -1.5f;
 float imin = -1.5f * 9.0f / 16.0f;
@@ -12,6 +16,8 @@ float imax = 1.5f * 9.0f / 16.0f;
 
 static int mouseX = 0;
 static int mouseY = 0;
+
+static int colorChoice = 0;
 
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
@@ -54,6 +60,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
     window_handle = CreateWindow(window_class_name, L"Drawing Pixels", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                  640, 300, 640, 480, NULL, NULL, hInstance, NULL);
     if(window_handle == NULL) { return -1; }
+    HMENU hMenu = CreateMenu();
+
+    AppendMenu(hMenu, MF_STRING, ID_COLOR_1, L"Color 1");
+    AppendMenu(hMenu, MF_STRING, ID_COLOR_2, L"Color 2");
+    AppendMenu(hMenu, MF_STRING, ID_COLOR_3, L"Color 2");
+
+    SetMenu(window_handle, hMenu);
 
     while(!quit) {
         static MSG message = { 0 };
@@ -63,7 +76,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         computeMandelbrot(pixels, frame.width, frame.height);
 
         for (int i = 0; i < frame.width * frame.height; i++) {
-            frame.pixels[i] = color(pixels[i]);
+            //frame.pixels[i] = defColor(pixels[i]);
+            //frame.pixels[i] = graidiantColor(pixels[i]);
+            //frame.pixels[i] = fullSpectrumColor(pixels[i]);
+            frame.pixels[i] = color(colorChoice, pixels[i]);
         }
 
         // Call the CUDA function to compute Mandelbrot
@@ -81,6 +97,22 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
         case WM_QUIT:
         case WM_DESTROY: {
             quit = true;
+        } break;
+        case WM_COMMAND: {
+            switch (wParam) {
+                case ID_COLOR_1:
+                    colorChoice = 0;
+                    InvalidateRect(window_handle, NULL, FALSE);
+                    break;
+                case ID_COLOR_2:
+                    colorChoice = 1;
+                    InvalidateRect(window_handle, NULL, FALSE);
+                    break;
+                case ID_COLOR_3:
+                    colorChoice = 2;
+                    InvalidateRect(window_handle, NULL, FALSE);
+                    break;
+            }
         } break;
         case WM_LBUTTONDOWN: {
             mouseX = LOWORD(lParam);
