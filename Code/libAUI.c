@@ -8,6 +8,8 @@
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
 double zoom_factor = 0.5;
+static int mouseX = 0;
+static int mouseY = 0;
 
 struct {
     int width;
@@ -68,10 +70,20 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
             quit = true;
         } break;
         case WM_LBUTTONDOWN: {
-            int mouseX = LOWORD(lParam);
-            int mouseY = HIWORD(lParam);
+            mouseX = LOWORD(lParam);
+            mouseY = HIWORD(lParam);
             mouseY = frame.height - mouseY;
+            
+            // 3rd parameter is for frequency
+            SetTimer(window_handle, 1, 100, NULL);
 
+        } break;
+
+        case WM_LBUTTONUP: {
+            KillTimer(window_handle, 1);
+        }
+
+        case WM_TIMER: {
             double x = (double)mouseX / frame.width * (rmax - rmin) + rmin;
             double y = (double)mouseY / frame.height * (imax - imin) + imin;
             double r_range = (rmax - rmin) * zoom_factor;
@@ -85,7 +97,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
 
             InvalidateRect(window_handle, NULL, FALSE);
             UpdateWindow(window_handle);
-        } break;
+        }
 
         case WM_PAINT: {
             static PAINTSTRUCT paint;
