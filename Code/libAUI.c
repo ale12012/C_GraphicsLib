@@ -88,7 +88,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
             mouseY = frame.height - mouseY;
             
             // 3rd parameter is for frequency
-            SetTimer(window_handle, 1, 50, NULL);
+            SetTimer(window_handle, 1, 0, NULL);
 
         } break;
 
@@ -99,13 +99,20 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
         case WM_TIMER: {
             double r_range = (rmax - rmin) * zoom_factor;
             double i_range = (imax - imin) * zoom_factor;
-            double x = (double)mouseX / frame.width * (r_range) + rmin;
-            double y = (double)mouseY / frame.height * (i_range) + imin;
-            double new_rmin = x - r_range / 2.0;
-            double new_rmax = x + r_range / 2.0;
-            double new_imin = y - i_range / 2.0;
-            double new_imax = y + i_range / 2.0;
-            
+
+            // Calculate the ratio of clicked point to viewport edges
+            double ratio_x = (double)(mouseX) / frame.width;
+            double ratio_y = (double)(mouseY) / frame.height;
+
+            double x = (double)mouseX / frame.width * (rmax - rmin) + rmin;
+            double y = (double)mouseY / frame.height * (imax - imin) + imin;
+
+            // Adjust the new ranges based on the ratios
+            double new_rmin = x - r_range * ratio_x;
+            double new_rmax = x + r_range * (1 - ratio_x);
+            double new_imin = y - i_range * ratio_y;
+            double new_imax = y + i_range * (1 - ratio_y);
+
             imax = new_imax;
             imin = new_imin;
             rmax = new_rmax;
