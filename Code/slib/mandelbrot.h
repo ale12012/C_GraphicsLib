@@ -10,6 +10,8 @@ int mandelbrot(int pixilIndex, int width, int height);
 int color(int iterations);
 int fullSpectrumColor(int iterations);
 int graidiantColor(int iterations);
+int goldenColor(int iterations);
+int neonColor(int iterations);
 int hueToRGB(float hue);
 void set_mandelbrot_range(float new_rmin, float new_rmax, float newimin, float new_imax);
 
