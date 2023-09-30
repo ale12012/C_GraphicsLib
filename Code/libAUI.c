@@ -48,9 +48,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
     while(!quit) {
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
-
         for (int i = 0; i < frame.width * frame.height; i++) {
-            frame.pixels[i] = color(mandelbrot(i, frame.width, frame.height));
+            //frame.pixels[i] = fullSpectrumColor(mandelbrot(i, frame.width, frame.height));
+            frame.pixels[i] = graidiantColor(mandelbrot(i, frame.width, frame.height));
+            // frame.pixels[i] = color(mandelbrot(i, frame.width, frame.height));
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
