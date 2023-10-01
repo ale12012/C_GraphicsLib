@@ -6,13 +6,9 @@ extern float rmin;
 extern float imin;
 extern float imax;
 
-int mandelbrot(int pixilIndex, int width, int height);
-int color(int iterations);
-int fullSpectrumColor(int iterations);
-int graidiantColor(int iterations);
-int goldenColor(int iterations);
-int neonColor(int iterations);
-int hueToRGB(float hue);
-void set_mandelbrot_range(float new_rmin, float new_rmax, float newimin, float new_imax);
+double mandelbrot_orbit_trap(int pixilIndex, int width, int height);
+int mandelbrot_avg_orbit(int pixilIndex, int width, int height);
+int map_to_color(double min_distance);
+void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float new_imax);
 
 #endif
