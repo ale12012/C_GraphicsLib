@@ -11,7 +11,7 @@ float imin = -1.5f * 9.0f / 16.0f;
 float imax = 1.5f * 9.0f / 16.0f;
 
 
-int max_iterations = 100;
+int max_iterations = 500;
 
 int mandelbrot(int pixilIndex, int width, int height) {
     int x = pixilIndex % width;
@@ -62,7 +62,7 @@ int graidiantColor(int iterations) {
     int r = (int)(rStart + ratio * (rEnd - rStart));
     int g = (int)(gStart + ratio * (gEnd - gStart));
     int b = (int)(bStart + ratio * (bEnd - bStart));
-    if (iterations == max_iterations) {
+    if (iterations <= max_iterations / 20) {
         r = 0;
         g = 0;
         b = 0;
