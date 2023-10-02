@@ -1,5 +1,6 @@
 #include <complex.h>
 #include <math.h>
+#include <stdio.h>
 
 #define TWO_PI 6.2831853071795864769252867665590057683943
 #define GOLDEN_RATIO 1.6180339887
@@ -11,7 +12,7 @@ float imin = -1.5f * 9.0f / 16.0f;
 float imax = 1.5f * 9.0f / 16.0f;
 
 
-int max_iterations = 500;
+int max_iterations = 150;
 
 void set_mandelbrot_range(float new_rmin, float new_rmax, float new_imin, float new_imax) {
     rmin = new_rmin;
@@ -26,15 +27,18 @@ int map_to_color(double min_distance) {
     // You might need to adjust this factor based on the results you see.
     double scaled_distance = min_distance * 10.0;
     scaled_distance = fmin(fmax(scaled_distance, 0.0), 1.0);
-    int grayscale_value = (int)(255.0 * (1.0 - scaled_distance));
-    return (grayscale_value << 16) | (grayscale_value << 8) | grayscale_value;
+    int grayscale_value = (int)(0xFF * (1.0 - scaled_distance));
+    return (grayscale_value % 16) | (grayscale_value << 8) | grayscale_value;
 }
 
 int map_to_color_avg_orbit(double sum, int iterations) {
-    // Here you can determine the color based on the accumulated value.
-    // For simplicity, I'll just map it to grayscale for now.
-    int gray = (int)(255.0 * sum);
-    return (gray << 16) | (gray << 8) | gray;
+    int color = (int)((double)0xFF * sum) | (int)((double)0xFF * sum) << 8 | (int)((double)0xFF * sum) << 16;
+
+    if (iterations < max_iterations) {
+        return color;
+    } else {
+        return 0;
+    }
 }
 
 
@@ -52,7 +56,7 @@ double distance_to_line_segment(double complex z) {
 }
 
 int mandelbrot_avg_orbit(int pixilIndex, int width, int height) {
-        int x = pixilIndex % width;
+    int x = pixilIndex % width;
     int y = pixilIndex / width;
     double x0 = (double)x / (double)width * (rmax - rmin) + rmin;
     double y0 = (double)y / (double)height * (imax - imin) + imin;
@@ -67,7 +71,7 @@ int mandelbrot_avg_orbit(int pixilIndex, int width, int height) {
         z_prev = z;
         z = z * z + z0;
         
-        double diff = cabsf(z - z_prev);
+        double diff = cabsf(z) - cabsf(z_prev);
         // Apply the transformation
         double transformed = 1.0 / (1.0 + diff);
         sum += transformed;
