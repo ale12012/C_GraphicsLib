@@ -7,7 +7,7 @@
 
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
-double zoom_factor = 0.5;
+double zoom_factor = 0.75f;
 
 struct {
     int width;
@@ -49,8 +49,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
         for (int i = 0; i < frame.width * frame.height; i++) {
-            //frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+            frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
+            //frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
