@@ -9,18 +9,18 @@ static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
 double zoom_factor = 0.75f;
 
-struct {
+typedef struct frame {
     int width;
     int height;
     uint32_t *pixels;
 } frame = {0};
 
+// Unsure if i will use this approach.
+void callFuncPtr(void (*funcPtr)(frame* frame)) {
+    funcPtr();
+}
+
 LRESULT CALLBACK WindowProcessMessage(HWND, UINT, WPARAM, LPARAM);
-#if RAND_MAX == 32767
-#define Rand32() ((rand() << 16) + (rand() << 1) + (rand() & 1))
-#else
-#define Rand32() rand()
-#endif
 
 static BITMAPINFO frame_bitmap_info;
 static HBITMAP frame_bitmap = 0;
@@ -49,8 +49,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
         for (int i = 0; i < frame.width * frame.height; i++) {
-            frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            //frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
@@ -67,21 +66,8 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
         case WM_DESTROY: {
             quit = true;
         } break;
-        case WM_LBUTTONDOWN: {
-            int mouseX = LOWORD(lParam);
-            int mouseY = HIWORD(lParam);
-            mouseY = frame.height - mouseY;
-
-            double x = (double)mouseX / frame.width * (rmax - rmin) + rmin;
-            double y = (double)mouseY / frame.height * (imax - imin) + imin;
-            double r_range = (rmax - rmin) * zoom_factor;
-            double i_range = (imax - imin) * zoom_factor;
-            double new_rmin = x - r_range / 2.0;
-            double new_rmax = x + r_range / 2.0;
-            double new_imin = y - i_range / 2.0;
-            double new_imax = y + i_range / 2.0;
-
-            set_mandelbrot_range(new_rmin, new_rmax, new_imin, new_imax);
+            //not sure if this works
+            callFuncPtr(mainDraw);
 
             InvalidateRect(window_handle, NULL, FALSE);
             UpdateWindow(window_handle);
