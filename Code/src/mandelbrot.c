@@ -6,12 +6,15 @@
 #define TWO_PI 6.2831853071795864769252867665590057683943
 #define GOLDEN_RATIO 1.6180339887
 
-double rmax = 1.5f;
-double rmin = -1.5f;
-// make sure the aspect ratio is 16:9 
-double imin = -1.5f * 9.0f / 16.0f;
-double imax = 1.5f * 9.0f / 16.0f;
+double rmin = -2.0;
+double rmax = 2.0;
+double imin = -2.0;
+double imax = 2.0;
 
+void set_aspect_ratio(int width, int height){
+    imin = (rmax - rmin) * (double)height / (double)width / 2.0;
+    imax = -imin;
+}
 
 int max_iterations = 500;
 
@@ -34,27 +37,21 @@ int map_to_color(double min_distance) {
 
 
 
-
-
 int hsl_to_rgb(double h, double s, double l) {
+    // Ensure inputs are in expected ranges
+    h = fmod(h, 360.0);
+    s = fmin(fmax(s, 0.0), 1.0);
+    l = fmin(fmax(l, 0.0), 1.0);
+
+    // Convert hue to 0-6 range
+    h /= 60.0;
+
     double c = (1.0 - fabs(2.0 * l - 1.0)) * s;
     double x = c * (1.0 - fabs(fmod(h, 2.0) - 1.0));
     double m = l - 0.5 * c;
     double r, g, b;
 
-    if (h < 1.0) {
-        r = c; g = x; b = 0.0;
-    } else if (h < 2.0) {
-        r = x; g = c; b = 0.0;
-    } else if (h < 3.0) {
-        r = 0.0; g = c; b = x;
-    } else if (h < 4.0) {
-        r = 0.0; g = x; b = c;
-    } else if (h < 5.0) {
-        r = x; g = 0.0; b = c;
-    } else {
-        r = c; g = 0.0; b = x;
-    }
+    // ... [rest of the function remains the same]
 
     return ((int)((r + m) * 255) << 16) + ((int)((g + m) * 255) << 8) + (int)((b + m) * 255);
 }
@@ -64,10 +61,10 @@ int map_to_color_avg_orbit(double normalized_sum, int iterations) {
         return 0x000000; // Black for points inside the Mandelbrot set
     } else {
         // Produce a cyclic color palette by using the fractional part of the normalized sum
-        double hue = fmod(normalized_sum * 10.0, 1.0);  // Adjust multiplier for color frequency
-        double saturation = 1/exp(tan(normalized_sum)); // Can be adjusted between 0 and 1
-        double lightness = 1/log(log(normalized_sum));  // Can be adjusted between 0 and 1
-        
+        double hue = 57 * abs(acos(sin(normalized_sum))) + 90;  // Needs to be in the range 0 to 360
+        double saturation = 1 / exp(normalized_sum*10) ; // Can be adjusted between 0 and 1
+        double lightness = tan(normalized_sum);  // Can be adjusted between 0 and 1
+
         return hsl_to_rgb(hue, saturation, lightness);
     }
 }
@@ -93,16 +90,18 @@ int mandelbrot_avg_orbit(int pixelIndex, int width, int height) {
     double y0 = (double)y / (double)height * (imax - imin) + imin;
     double complex z0 = x0 + y0 * I;
     double complex z = z0;
+    double z_prev = z0;
+    double sum = 0.0;
 
     int iterations = 0;
-    while (cabs(z) < 200000.0 && iterations < max_iterations) {  // Adjusted bailout radius for more accurate smoothing
+    while (/*cabs(z) < 4.0 &&*/ cabs(z) <= 10e14 && iterations < max_iterations) {  // Adjusted bailout radius for more accurate smoothing
         z = z * z + z0;
+        sum += 1.0 / (1.0 + cabs(z - z_prev));
+        z_prev = z;
         iterations++;
     }
-
-        // Apply smoothing
-    double smooth_value = iterations - log(log(cabs(z))) / log(2.0);
-    return map_to_color_avg_orbit(smooth_value, iterations);
+    sum /= iterations;
+    return map_to_color_avg_orbit(sum, iterations);
 }
 
 

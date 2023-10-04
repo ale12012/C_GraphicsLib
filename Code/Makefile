@@ -9,4 +9,4 @@ compile:
 	gcc libAUI.c -o exec/libAUI -lgdi32 -Lslib -lmandelbrot
 
 uninstall:
-	rm -rf exec slib
+	rm -rf exec slib/*.a slib/*.o

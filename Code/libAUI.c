@@ -44,13 +44,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
     window_handle = CreateWindow(window_class_name, L"Drawing Pixels", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                  640, 300, 640, 480, NULL, NULL, hInstance, NULL);
     if(window_handle == NULL) { return -1; }
+    set_aspect_ratio(frame.width, frame.height);
 
     while(!quit) {
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
         for (int i = 0; i < frame.width * frame.height; i++) {
-            frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            //frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+            //frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
+            frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
@@ -103,7 +104,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
         case WM_SIZE: {
             frame_bitmap_info.bmiHeader.biWidth  = LOWORD(lParam);
             frame_bitmap_info.bmiHeader.biHeight = HIWORD(lParam);
-
+            set_aspect_ratio(frame.width, frame.height);
             if(frame_bitmap) DeleteObject(frame_bitmap);
             frame_bitmap = CreateDIBSection(NULL, &frame_bitmap_info, DIB_RGB_COLORS, (void**)&frame.pixels, 0, 0);
             SelectObject(frame_device_context, frame_bitmap);

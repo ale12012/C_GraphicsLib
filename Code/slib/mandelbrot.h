@@ -4,6 +4,7 @@
 extern int mandelbrot_orbit_trap(int pixilIndex, int width, int height);
 extern int mandelbrot_avg_orbit(int pixilIndex, int width, int height);
 extern void set_mandelbrot_range(double rmin, double rmax, double imin, double imax);
+extern void set_aspect_ratio(int width, int height);
 
 extern double rmin;
 extern double rmax;
