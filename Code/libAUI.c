@@ -3,7 +3,7 @@
 #include <windows.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "slib/mandelbrot.h"
+#include "slib/newtonsfract.h"
 
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
@@ -50,8 +50,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
         for (int i = 0; i < frame.width * frame.height; i++) {
-            //frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+            frame.pixels[i] = n_iter_to_zero(i, 100, frame.width, frame.height);
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
@@ -82,7 +81,7 @@ LRESULT CALLBACK WindowProcessMessage(HWND window_handle, UINT message, WPARAM w
             double new_imin = y - i_range / 2.0;
             double new_imax = y + i_range / 2.0;
 
-            set_mandelbrot_range(new_rmin, new_rmax, new_imin, new_imax);
+            set_range(new_rmin, new_rmax, new_imin, new_imax);
 
             InvalidateRect(window_handle, NULL, FALSE);
             UpdateWindow(window_handle);
