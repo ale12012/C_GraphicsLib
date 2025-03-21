@@ -50,8 +50,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
         static MSG message = { 0 };
         while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
         for (int i = 0; i < frame.width * frame.height; i++) {
-            //frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+            /*
+            
+            Set rendering function here
+            
+            */
+            frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
+            //frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
+            //frame.pixels[i] = dbail_mandelbrot(i, frame.width, frame.height);
+            
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
