@@ -3,9 +3,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
+
 #define TWO_PI 6.2831853071795864769252867665590057683943
 #define GOLDEN_RATIO 1.6180339887
-
+#define max_iterations 1000
 double rmin = -2.0;
 double rmax = 2.0;
 double imin = -2.0;
@@ -16,7 +17,6 @@ void set_aspect_ratio(int width, int height){
     imax = -imin;
 }
 
-int max_iterations = 1000;
 
 void set_mandelbrot_range(double new_rmin, double new_rmax, double new_imin, double new_imax) {
     rmin = new_rmin;
@@ -64,23 +64,22 @@ int hsl_to_rgb(double h, double s, double l) {
 }
 
 
-int map_to_color(double min_distance, int iter) {
-    // Scale min_distance for better color representation. 
-    // You might need to adjust this factor based on the results you see.
-    double scaled_distance = min_distance * 100.0f;
+int map_to_color(double min_distance, double dbail_ratio, int iter) {
+    double scaled_distance = min_distance * 1000.0f * (1 + (1/rmax - rmin));
+    scaled_distance = log(scaled_distance);
     scaled_distance = fmin(fmax(scaled_distance, 0.0), 1.0);
-    //int grayscale_value = (int)(0xFF * (1.0 - scaled_distance));
-    //return (grayscale_value % 16) | (grayscale_value << 8) | grayscale_value;
     double h, s, l;
-    h = (scaled_distance * 360.0f + fmod(pow((double)iter / (double)max_iterations * 360.0, 1.50), 360.0)) / 2.0f;
-    s = (1.0f - scaled_distance + (double)iter / (double)max_iterations) / 2.0f;
+    h = ((scaled_distance * 360.0f + fmod(pow((double)iter / (double)max_iterations * 360.0, 1.50), 360.0)) / 2.0f);
+    s = 1 - log(fabs(min_distance - scaled_distance)); //very dark unless there is a line segment, inversly logaritmicly proportional to local line segments.
     l = (1.0f - scaled_distance + (double)iter / (double)max_iterations) / 2.0f;
+    //return (int)(scaled_distance * (double)0xFF) << 16 | (int)(scaled_distance * (double)0xFF) << 8 | (int)(scaled_distance * (double)0xFF);
     return hsl_to_rgb(h, s, l);
 }
 
 
-int iterations_to_color(int iter) {
-    double h = fmod(pow((double)iter / (double)max_iterations * 360.0, 1.50), 360.0);
+int dbail_to_color(int iter, double dbail, double dz) {
+    double dbail_ratio = dz / dbail;
+    double h = log(fmod(pow((double)iter / (double)max_iterations * 360.0, 1.50), 360.0));
     double s =  (double)iter / (double)max_iterations; 
     double l = (double)iter / (double)max_iterations;
     return hsl_to_rgb(h, s, l);
@@ -104,7 +103,6 @@ int map_to_color_avg_orbit(double normalized_sum, int iterations) {
 double distance_to_line_segment(double complex z) {
     double x = creal(z);
     double y = cimag(z);
-
     if (y >= -0.5 && y <= 0.5) {  // Point lies within the vertical segment
         return fabs(x);
     } else if (y < -0.5) {  // Point is below the segment
@@ -115,7 +113,6 @@ double distance_to_line_segment(double complex z) {
 }
 
 int mandelbrot_avg_orbit(int pixelIndex, int width, int height) {
-    //probably needs interpolation
     int x = pixelIndex % width;
     int y = pixelIndex / width;
     double x0 = (double)x / (double)width * (rmax - rmin) + rmin;
@@ -168,7 +165,7 @@ int mandelbrot_orbit_trap(int pixilIndex, int width, int height) {
         dz_sum += dz;
         iterations++;
     }
-    return map_to_color(min_distance, iterations);
+    return map_to_color(min_distance, cabsf(dz_sum)/dbail, iterations);
 }
 
 int dbail_mandelbrot(int pixilIndex, int width, int height)
@@ -182,7 +179,7 @@ int dbail_mandelbrot(int pixilIndex, int width, int height)
     int iterations = 0;
     double complex dz = 1 + 0 * I;
     double complex dz_sum = 0 + 0 * I;
-    double dbail = 1e6;
+    double dbail = 1e20;
 
     while(iterations <= max_iterations && cabsf(dz_sum) < dbail)
     {
@@ -192,7 +189,7 @@ int dbail_mandelbrot(int pixilIndex, int width, int height)
         iterations++;
     }
     if (cabs(dz_sum) >= dbail){
-        return iterations_to_color(iterations);
+        return dbail_to_color(iterations, dbail, dz);
     }
     return 0;
 }

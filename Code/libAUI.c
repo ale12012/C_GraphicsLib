@@ -5,9 +5,11 @@
 #include <stdint.h>
 #include "slib/mandelbrot.h"
 
+
 static bool quit = false;
 double x_min = -2.0, x_max = 1.0, y_min = -1.5, y_max = 1.5;
 double zoom_factor = 0.75f;
+
 
 struct {
     int width;
@@ -43,22 +45,64 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pCmdLine, 
     static HWND window_handle;
     window_handle = CreateWindow(window_class_name, L"Drawing Pixels", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                  640, 300, 640, 480, NULL, NULL, hInstance, NULL);
-    if(window_handle == NULL) { return -1; }
+    if (window_handle == NULL) {
+        return -1;
+    }
+
     set_aspect_ratio(frame.width, frame.height);
 
-    while(!quit) {
+    // Multithreading definitions
+    #define NUM_THREADS 12
+
+    typedef struct {
+        int start;
+        int end;
+        int width;
+        int height;
+        uint32_t *pixels;
+    } MandelbrotThreadParams;
+
+    DWORD WINAPI mandelbrot_thread_func(LPVOID param) {
+        MandelbrotThreadParams *p = (MandelbrotThreadParams *)param;
+
+        for (int i = p->start; i < p->end; i++) {
+            //p->pixels[i] = mandelbrot_orbit_trap(i, p->width, p->height);
+            // Swap in other Mandelbrot functions if needed
+            p->pixels[i] = dbail_mandelbrot(i, p->width, p->height);
+            //p->pixels[i] = mandelbrot_avg_orbit(i, p->width, p->height);
+        }
+
+        return 0;
+    }
+
+    while (!quit) {
         static MSG message = { 0 };
-        while(PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) { DispatchMessage(&message); }
-        for (int i = 0; i < frame.width * frame.height; i++) {
-            /*
-            
-            Set rendering function here
-            
-            */
-            frame.pixels[i] = mandelbrot_orbit_trap(i, frame.width, frame.height);
-            //frame.pixels[i] = mandelbrot_avg_orbit(i, frame.width, frame.height);
-            //frame.pixels[i] = dbail_mandelbrot(i, frame.width, frame.height);
-            
+        while (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+            DispatchMessage(&message);
+        }
+
+        if (frame.width > 0 && frame.height > 0 && frame.pixels) {
+            HANDLE threads[NUM_THREADS];
+            MandelbrotThreadParams thread_params[NUM_THREADS];
+
+            int total_pixels = frame.width * frame.height;
+            int chunk_size = total_pixels / NUM_THREADS;
+
+            for (int i = 0; i < NUM_THREADS; i++) {
+                thread_params[i].start = i * chunk_size;
+                thread_params[i].end = (i == NUM_THREADS - 1) ? total_pixels : (i + 1) * chunk_size;
+                thread_params[i].width = frame.width;
+                thread_params[i].height = frame.height;
+                thread_params[i].pixels = frame.pixels;
+
+                threads[i] = CreateThread(NULL, 0, mandelbrot_thread_func, &thread_params[i], 0, NULL);
+            }
+
+            WaitForMultipleObjects(NUM_THREADS, threads, TRUE, INFINITE);
+
+            for (int i = 0; i < NUM_THREADS; i++) {
+                CloseHandle(threads[i]);
+            }
         }
 
         InvalidateRect(window_handle, NULL, FALSE);
